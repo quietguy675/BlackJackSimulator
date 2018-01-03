@@ -2,66 +2,41 @@
 #include <ctime> // for system time
 #include <cstdlib> // for srand() and rand()
 #include <string>
+#include "blackjack.h" // for HandResults, DECK_SIZE, and CARDS_PER_DECK
 #include "deck.h" // for Deck class
 #include "card.h" // for Card class
+#include "player.h" // for Player class
 
-
-char getUserInput()
+HandResults playBlackjack(Deck deck)
 {
-    char temp;
-    do
-    {
-        std::cout << " Hit or stand (h/s): ";
-        std::cin >> temp;
-    } while (temp != 's' && temp != 'h');
-    return temp;
-}
-
-bool playBlackjack(Deck deck)
-{
-    int player_total = 0;
-    int dealer_total = 0;
+    Player dealer(true);
+    Player player;    
 
     // Dealer draws first
-    dealer_total += deck.dealCard().getCardValue();
-    std::cout << "Dealers' up card is " << dealer_total << "\n";
-    player_total += deck.dealCard().getCardValue();
-    player_total += deck.dealCard().getCardValue();
+    dealer.deal(deck);
+    std::cout << "Dealers' up card is " << dealer.getTotal() << "\n";
+    player.deal(deck);
 
-    char user_action;
-    while (1)
-    {
-        std::cout << "Your total: " << player_total;
-        user_action = getUserInput();
-        if (user_action == 's')
-            break;
-        player_total += deck.dealCard().getCardValue();
-        if (player_total > 21)
-        {
-            std::cout << player_total << "Busted!\n";
-            return false;
-        }
-    }
+    HandResults result;
+    result = player.play(deck);
+    if (result == HandResults::Break)
+        return HandResults::Lose;
 
-    while (dealer_total < 17)
-    {
-        dealer_total += deck.dealCard().getCardValue();
-        std::cout << "Dealer total: " << dealer_total << "\n";
-        if (dealer_total > 21)
-        {
-            std::cout << "Dealer busted.\n";
-            return true;
-        }
-    }
+    result = dealer.play(deck);
+    if (result == HandResults::Break)
+        return HandResults::Win;
 
-    if (player_total > dealer_total)
-        return true;
-    return false;
+    if (player.getTotal() == dealer.getTotal())
+        return HandResults::Push;
+    else if (player.getTotal() > dealer.getTotal())
+        return HandResults::Win;
+    return HandResults::Lose;
 }
 
 int main()
 {
     srand(0);
+    rand();
     const Card cardQueenHearts(Card::RANK_QUEEN, Card::SUIT_HEART);
     cardQueenHearts.printCard();
     std::cout << " has the value " << cardQueenHearts.getCardValue() << '\n';
@@ -72,9 +47,12 @@ int main()
     deck.printDeck();
 
     std::cout << "The first card has value: " << deck.dealCard().getCardValue() << "\n";
-    std::cout << "The second card has value: " << deck.dealCard().getCardValue() << "\n"; 
-    if (playBlackjack(deck))
+    std::cout << "The second card has value: " << deck.dealCard().getCardValue() << "\n";
+    HandResults result = playBlackjack(deck); 
+    if (result==HandResults::Win)
         std::cout << "Congrats, You won!\n";
+    else if (result == HandResults::Push)
+        std::cout << "Push :\\\n";
     else
         std::cout << "You lost.\n";
     return 0;

@@ -2,7 +2,7 @@
 #include <cassert> // for assert
 #include "deck.h" // for deck class
 #include "card.h" // for card class
-
+#include "blackjack.h" // for NUM_DECKS and CARDS_PER_DECK
 
 int Deck::getRandomNumber(int min, int max)
 {
@@ -61,6 +61,6 @@ void Deck::shuffleDeck()
 
 const Card& Deck::dealCard()
 {
-    assert(m_cardIndex < 52);
+    assert(m_cardIndex < NUM_DECKS*CARDS_PER_DECK);
     return m_deck[m_cardIndex++];
 }
