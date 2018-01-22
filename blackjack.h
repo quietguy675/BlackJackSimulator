@@ -10,6 +10,4 @@ enum class HandResults
     Lose
 };
 
-const int NUM_DECKS = 1;
-const int CARDS_PER_DECK = 52;
 #endif

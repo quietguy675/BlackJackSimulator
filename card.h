@@ -1,5 +1,6 @@
 #ifndef CARD_H
 #define CARD_H
+#include <string>
 
 class Card
 {
@@ -41,7 +42,9 @@ public:
     {
     }
 
+    CardRank getRank() const;
 
+    std::string getCard() const;
     void printCard() const;
 
     int getCardValue() const;

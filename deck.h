@@ -1,14 +1,18 @@
 #ifndef DECK_H
 #define DECK_H
-#include <array> // for array
+#include <vector> // for vector
 #include "card.h"
-#include "blackjack.h" // for NUM_DECKS and CARDS_PER_DECK
+
+const int CARDS_PER_DECK = 52;
+const int CARDS_PER_SUIT = 13;
  
 class Deck
 {
 private:
-    int m_cardIndex=0;
-    std::array<Card, NUM_DECKS*CARDS_PER_DECK> m_deck;
+    int m_num_decks = 1;
+    int m_card_index = 0;
+    int m_cards_drawn = 0;
+    std::vector<Card> m_deck;
 
     // Generate a random number between min and max (inclusive)
     // Assume srand() has already been called in main()
@@ -18,13 +22,19 @@ private:
     
 
 public:
-    Deck();
+    Deck(int num_decks = 1);
 
     void printDeck() const;
 
     void shuffleDeck();
 
     const Card& dealCard();
+
+    void playerCut(int cut);
+
+    void dealerCut();
+
+    int getNumCards();
 };
 
 #endif

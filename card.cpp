@@ -1,6 +1,41 @@
 #include <iostream>
+#include <string>
 #include "card.h"
 
+Card::CardRank Card::getRank() const
+{
+    return m_rank;
+}
+
+std::string Card::getCard() const
+{
+    std::string holder = "";
+    switch (m_rank)
+    {
+        case RANK_2:        holder += '2'; break;
+        case RANK_3:        holder += '3'; break;
+        case RANK_4:        holder += '4'; break;
+        case RANK_5:        holder += '5'; break;
+        case RANK_6:        holder += '6'; break;
+        case RANK_7:        holder += '7'; break;
+        case RANK_8:        holder += '8'; break;
+        case RANK_9:        holder += '9'; break;
+        case RANK_10:       holder += 'T'; break;
+        case RANK_JACK:     holder += 'J'; break;
+        case RANK_QUEEN:    holder += 'Q'; break;
+        case RANK_KING:     holder += 'K'; break;
+        case RANK_ACE:      holder += 'A'; break;
+    }
+ 
+    switch (m_suit)
+    {
+        case SUIT_CLUB:     holder += 'C'; break;
+        case SUIT_DIAMOND:  holder += 'D'; break;
+        case SUIT_HEART:    holder += 'H'; break;
+        case SUIT_SPADE:    holder += 'S'; break;
+    }
+    return holder;
+}
 
 void Card::printCard() const
 {

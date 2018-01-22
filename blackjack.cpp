@@ -2,33 +2,74 @@
 #include <ctime> // for system time
 #include <cstdlib> // for srand() and rand()
 #include <string>
-#include "blackjack.h" // for HandResults, DECK_SIZE, and CARDS_PER_DECK
+#include <vector>
+#include "blackjack.h" // for HandResults
 #include "deck.h" // for Deck class
 #include "card.h" // for Card class
 #include "player.h" // for Player class
 
-HandResults playBlackjack(Deck deck)
+HandResults playBlackjack(Deck &deck)
 {
-    Player dealer(true);
-    Player player;    
+    Dealer dealer;
+    std::vector<Player> players;
+    players.push_back(Player());
 
-    // Dealer draws first
+
+    // Do cuts
+    players.back().doCut(deck);
+    deck.dealerCut();
+    
+    // Burn first card in the deck
+    deck.dealCard();
+    
+    // Deal
+    for (auto &player: players)
+        player.deal(deck);
     dealer.deal(deck);
-    std::cout << "Dealers' up card is " << dealer.getTotal() << "\n";
-    player.deal(deck);
-
-    HandResults result;
-    result = player.play(deck);
-    if (result == HandResults::Break)
+    for (auto &player: players)
+        player.deal(deck);
+    dealer.deal(deck);
+    
+    // Play
+    std::cout << "Dealers' up card is ";
+    dealer.getUpCard().printCard();
+    std::cout << "\n";
+    
+    // Dealer peaks
+    if (dealer.getUpCard().getCardValue() == 11 && dealer.getTotal() == 21)
+    {
+        std::cout << "Dealer peaks.. it's blackjack!";
+        std::cout << "Your Hand: ";
+        players.back().printHand();
+        if (players.back().getTotal() == 21)
+            return HandResults::Push;
         return HandResults::Lose;
+    } else
+    if (dealer.getUpCard().getCardValue() == 11 && dealer.getTotal() != 21)
+        std::cout << "Dealer peaks.. no blackjack!";
 
-    result = dealer.play(deck);
-    if (result == HandResults::Break)
+    bool all_busted = true;
+    for (auto &player: players)
+    {
+        player.play(deck);
+        if (player.getResult() != HandResults::Break)
+            all_busted = false;
+    }
+
+    // Dealer does not play more cards if everyone busts.
+    if (all_busted)
+        return HandResults::Lose;
+    HandResults dealer_result;
+    dealer_result = dealer.play(deck);
+
+    if (players.back().getResult() == HandResults::Break)
+        return HandResults::Lose;
+    if (dealer_result == HandResults::Break)
         return HandResults::Win;
 
-    if (player.getTotal() == dealer.getTotal())
+    if (players.back().getTotal() == dealer.getTotal())
         return HandResults::Push;
-    else if (player.getTotal() > dealer.getTotal())
+    else if (players.back().getTotal() > dealer.getTotal())
         return HandResults::Win;
     return HandResults::Lose;
 }
@@ -45,9 +86,7 @@ int main()
     deck.printDeck();
     deck.shuffleDeck();
     deck.printDeck();
-
-    std::cout << "The first card has value: " << deck.dealCard().getCardValue() << "\n";
-    std::cout << "The second card has value: " << deck.dealCard().getCardValue() << "\n";
+    
     HandResults result = playBlackjack(deck); 
     if (result==HandResults::Win)
         std::cout << "Congrats, You won!\n";
