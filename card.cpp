@@ -2,11 +2,21 @@
 #include <string>
 #include "card.h"
 
+/*
+ * Gets the cards rank (i.e. Rank_2, Rank_3, Rank_4,...)
+ * Params: None
+ * Returns: Card::CardRank - enum rank of the card
+*/
 Card::CardRank Card::getRank() const
 {
     return m_rank;
 }
 
+/*
+ * Gets the card rank and suit  as a user-readable string (i.e. 2A, 3S, 4D,...)
+ * Params: None
+ * Returns: std::string - string of the card rank and suit
+*/
 std::string Card::getCard() const
 {
     std::string holder = "";
@@ -37,6 +47,12 @@ std::string Card::getCard() const
     return holder;
 }
 
+
+/*
+ * Prints the card to Cout without a newline.
+ * Params: None
+ * Returns: Void
+*/
 void Card::printCard() const
 {
     switch (m_rank)
@@ -65,6 +81,11 @@ void Card::printCard() const
     }
 }
 
+/*
+ * Gets the numerical value of the card (0-11)
+ * Params: None
+ * Returns: int - numerical value of the card (0-11)
+*/
 int Card::getCardValue() const
 {
     switch (m_rank)

@@ -19,8 +19,9 @@ private:
     std::vector<Card> m_hand;
     int m_num_aces;
     int m_total;
+    bool m_has_split_aces = false;
 public:
-    Hand(Card const &carda, Card const &cardb);
+    Hand(Card const &carda, Card const &cardb, bool split_aces = false);
     Hand();
     int getTotal();
     const Card& getUpCard();
@@ -32,13 +33,8 @@ public:
     bool canDouble();
     const Card& replaceCard(Card const &card);
 
+    bool hasSplitAces();
+    int getNumAces();
 };
 
-/*std::ostream& operator<< (std::ostream &out, const Hand &hand)
-{
-    out << "Hit or Stand (h or s)?";
-    return out;
-}
-void addCard(Card const &card);
-*/
-#endif
+ #endif

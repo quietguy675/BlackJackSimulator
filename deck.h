@@ -12,6 +12,7 @@ private:
     int m_num_decks = 1;
     int m_card_index = 0;
     int m_cards_drawn = 0;
+    int m_deck_end_counter = 0;
     std::vector<Card> m_deck;
 
     // Generate a random number between min and max (inclusive)
@@ -35,6 +36,10 @@ public:
     void dealerCut();
 
     int getNumCards();
+
+    int getNumCardsLeft();
+
+    bool moreDrawableCards();
 };
 
 #endif

@@ -10,23 +10,26 @@
 class Player
 {
 private:
-    char getUserInput();
+    char getUserInput(Hand &hand);
 protected:
     std::vector<Hand> m_hands;
     int getPlayerCut(int num_cards);
+    int m_num_hands = 1;
 public:
-    Player();
+    Player(int num_hands = 1);
 
     void deal(Deck &deck);
 
-    int getTotal();
+    int getTotal(int index = 0);
 
     HandResults play(Deck &deck);
-    void doSplit(int hands_index, Deck &deck);
-    HandResults getResult();
+    void doSplit(Hand &hand, Deck &deck);
+    HandResults getResult(int index = 0);
     void doCut(Deck &deck);
     void printHand();
     void printHand(int index);
+    void clearHands();
+    int getNumHands();
 };
 
 class Dealer : public Player
