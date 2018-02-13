@@ -10,4 +10,5 @@ enum class HandResults
     Lose
 };
 
+static int MIN_BET = 25;
 #endif

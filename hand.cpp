@@ -8,10 +8,11 @@
  * Params: const carda reference - a card from the previous hand
  *         const cardb reference - a card from the deck
 */
-Hand::Hand(Card const &carda, Card const &cardb, bool split_aces): m_num_aces(0), m_total(0), m_has_split_aces(split_aces)
+Hand::Hand(Card const &carda, Card const &cardb, bool split_aces): m_num_aces(0),
+    m_total(0), m_has_split_aces(split_aces), m_payed_out(false)
 {
-    m_hand.push_back(carda);
-    m_hand.push_back(cardb);
+    addCard(carda);
+    addCard(cardb);
 }
 
 /*
@@ -97,8 +98,11 @@ bool Hand::canDouble()
 const Card& Hand::replaceCard(Card const &card)
 {
     Card const &temp = m_hand.back();
-    m_hand.pop_back(); 
-    m_hand.push_back(card);
+    m_hand.pop_back();
+    if (temp.getCardValue() == 11)
+        --m_num_aces;
+    m_total -= temp.getCardValue();
+    addCard(card);
 
     //if split aces
     if (m_num_aces == 2)
@@ -114,6 +118,17 @@ const Card& Hand::replaceCard(Card const &card)
 const Card& Hand::getUpCard()
 {
     return m_hand.back();
+}
+
+/*
+ * Sets the flag that the hand has split aces.
+ * Params: None
+ * Returns: Void
+*/
+
+void Hand::setSplitAces()
+{
+    m_has_split_aces = true;
 }
 
 /*
@@ -134,4 +149,80 @@ bool Hand::hasSplitAces()
 int Hand::getNumAces()
 {
     return m_num_aces;
+}
+
+/*
+ * Sets the bet amount for the hand.
+ * Params: int bet - amount to bet on the hand.
+ * Returns: Void
+*/
+void Hand::placeBet(int bet)
+{
+    m_bet = bet;
+}
+
+/*
+ * gets the current bet amount for the hand
+ * Parms: None
+ * Returns: int - amount bet
+*/
+int Hand::getBet()
+{
+    return m_bet;
+}
+
+/*
+ * Tells if the hand is a blackjack
+ * Params: None
+ * Returns: bool - whether the hand is blackjack or not.
+*/
+bool Hand::hasBlackjack()
+{
+    if (m_total == 21 && m_hand.size() == 2)
+        return true;
+    return false;
+}
+
+/*
+ * Gets if the hand is better than the dealer.
+ * Params: Hand dealer_hand - Dealers' hand
+ * Returns: bool - win or not
+*/
+bool Hand::didHandWin(Hand dealer_hand)
+{
+    if (dealer_hand.getTotal() < getTotal())
+        return true;
+    return false;
+}
+
+/*
+ * Tells if the hand is busted
+ * Params: None
+ * Returns: bool - true if total > 21
+*/
+bool Hand::isBusted()
+{
+    if (getTotal() > 21)
+        return true;
+    return false;
+}
+
+/*
+ * Sets that the hand has been payed out.
+ * Params: None
+ * Returns: Void
+*/
+void Hand::payOut()
+{
+    m_payed_out = true;
+}
+
+/*
+ * Gets if the hand has been payed out.
+ * Params: None
+ * Returns: bool - payed out or not
+*/
+bool Hand::payedOut()
+{
+    return m_payed_out;
 }

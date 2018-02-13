@@ -5,12 +5,11 @@
 #include "hand.h" // for Hand class
 #include "card.h" // for Card class
 #include "deck.h" // for Deck class
-#include "blackjack.h" // for HandResults
 
 /*
  * Constructor. Adds a blank hand to the player.
 */
-Player::Player(int num_hands): m_num_hands(num_hands)
+Player::Player(int num_hands, int money): m_num_hands(num_hands), m_money(money)
 {
     assert(num_hands > 0 && num_hands < 2 && "Player can only play 1 or two hands");
     for (int i = 0; i < num_hands; ++i)
@@ -29,7 +28,7 @@ char Player::getUserInput(Hand &hand)
     {
         do
         {
-            std::cout << "Hit, stand, double or split? (h/s/d/s)?";
+            std::cout << "Hit, stand, double or split? (h/s/d/p)? ";
             std::cin >> temp;
         } while (temp != 's' && temp != 'h' && temp != 'd' && temp != 'p');
         return temp;
@@ -37,7 +36,7 @@ char Player::getUserInput(Hand &hand)
     {
         do
         {
-            std::cout << "Hit, stand, or double? (h/s/d)?";
+            std::cout << "Hit, stand, or double? (h/s/d)? ";
             std::cin >> temp;
         } while (temp != 's' && temp != 'h' && temp != 'd');
         return temp;
@@ -45,7 +44,7 @@ char Player::getUserInput(Hand &hand)
     {
         do
         {
-            std::cout << "Hit, stand, or split? (h/s/p)?";
+            std::cout << "Hit, stand, or split? (h/s/p)? ";
             std::cin >> temp;
         } while (temp != 's' && temp != 'h' && temp != 'p');
         return temp;
@@ -59,20 +58,42 @@ char Player::getUserInput(Hand &hand)
 }
 
 /*
+ * Gets the amount the player is to bet with min, max, and 0 to pull out.
+ * Params: min_bet - minimum bet
+ *         max_bet - maximum bet
+ * Returns: int - amount bet or 0 for pulling out
+*/
+int Player::getBetAmount(int min_bet, int max_bet)
+{
+    int bet_amount = 0;
+    do
+    {
+        std::cout << "How much would you like to bet? (0," << 
+            min_bet << "-" << max_bet << "): ";
+        std::cin >> bet_amount;
+    } while (bet_amount !=0 && bet_amount < min_bet && bet_amount > max_bet);
+    return bet_amount;
+}
+
+/*
  * Splits the hand into two hands (if they can) auto-draws 1 card for each hand.
  * Can't do this in Hand because would allocate on the heap and have to delete them.
  * Might change to dynamically allocated hands to m_hands and have a destructor delete them.
- * Params: hands_index - index of the m_hands hand to split
- *         deck - the current blackjack deck
+ * Params: Hand &hand - hand to split
+ *         Deck &deck - the current blackjack deck
  * Returns: None
 */
 void Player::doSplit(Hand &hand, Deck &deck)
 {
+    const Card &replaced_card = hand.replaceCard(deck.dealCard());
     if (hand.getNumAces() == 2)
-        m_hands.push_back(Hand(hand.replaceCard(deck.dealCard()),
+    {    
+        m_hands.push_back(Hand(replaced_card,
             deck.dealCard(),
             true));
-    m_hands.push_back(Hand(hand.replaceCard(deck.dealCard()),
+        hand.setSplitAces();
+    }
+    m_hands.push_back(Hand(replaced_card,
         deck.dealCard()));
 }
 
@@ -106,29 +127,36 @@ int Player::getTotal(int index)
 HandResults Player::play(Deck &deck)
 {
     char user_action;
-    printHand();
-    std::cout << "Your total: " << m_hands.back().getTotal() << " ";
     for (int i = 0; i < m_hands.size(); ++i)
     {
+        std::cout << m_hands[i] << " total: " << m_hands[i].getTotal() << " ";
         while(1)
         {
-            user_action = getUserInput(m_hands[i]);
-            if (user_action == 's')
-                break;
-            else if (user_action == 'p')
-                doSplit(m_hands[i], deck);
-                if (m_hands[i].hasSplitAces())
-                    break;
-            else if (user_action == 'd' or user_action == 'h')
-                m_hands.back().addCard(deck.dealCard());
-
-            int total = m_hands[i].getTotal();
-            std::cout << "Your total: " << total << " ";
-            if (total > 21)
+            if (m_hands[i].getTotal() == 21)
             {
                 std::cout << "\n";
                 break;
             }
+            user_action = getUserInput(m_hands[i]);
+            if (user_action == 's')
+                break;
+            else if (user_action == 'p')
+            {
+                doSplit(m_hands[i], deck);
+                if (m_hands[i].hasSplitAces())
+                    break;
+            } else if (user_action == 'd')
+            {
+                m_hands[i].addCard(deck.dealCard());
+                m_money -= m_hands[i].getBet();
+                m_hands[i].placeBet(m_hands[i].getBet() * 2);
+                break;
+            } else if (user_action == 'h')
+                m_hands[i].addCard(deck.dealCard());
+
+            std::cout << m_hands[i] << " total: " << m_hands[i].getTotal() << " ";
+            if (m_hands[i].getTotal() > 21)
+                break;
         }
     }
     return HandResults::Unknown;
@@ -216,10 +244,97 @@ void Player::clearHands()
         m_hands.push_back(Hand());
 }
 
+/*
+ * Gets the number of hands the player has.
+ * Params: None
+ * Returns: int - number of hands the player is playing.
+*/
 int Player::getNumHands()
 {
     return m_hands.size();
 }
+
+/*
+ * Gets the hands of the player.
+ * Params: None
+ * Returns: const std::vector<Hand>& - vector of the users' hands.
+*/
+std::vector<Hand>& Player::getHands()
+{
+    return m_hands;
+}
+
+/*
+ * Tells if the player is playing.
+ * Params: None
+ * Returns: bool - playing or not
+*/
+bool Player::isPlaying()
+{
+    return m_is_playing;
+}
+
+/*
+ * Does the betting
+ * Parms: None
+ * Returns: Void
+*/
+void Player::placeBets(int min_bet)
+{
+    // If player has not enough money, sit them out
+    if (min_bet > m_money)
+    {
+        std::cout << "You lost all your money. no play for you!!\n";
+        m_is_playing = false;
+        return;
+    }
+    if (m_num_hands >= 2 && m_money < (min_bet * 4))
+    {
+        std::cout << "Not enough money for two hands. reducing to one...\n";
+        m_num_hands = 1;
+        if (m_hands.size() == 2)
+            m_hands.pop_back();
+    }
+    for (int i = 0, n = m_hands.size(); i < n; i++)
+    {
+        std::cout << "Money: " << m_money << " Hand " << i+1 << ": ";
+        int something;
+        //2x min bet if playing 2 hands
+        if (m_num_hands >= 2)
+            something = getBetAmount(2*min_bet, (m_money - 2*min_bet));
+        else
+            something = getBetAmount(min_bet, m_money);
+        if (something == 0 && m_num_hands >= 2)
+        {
+            --m_num_hands;
+            m_hands.erase(m_hands.begin() + i);
+            --n;
+            continue;
+        } else if (something == 0)
+        {
+            m_is_playing = false;
+            m_hands.pop_back();
+            return;
+        }    
+        m_hands[i].placeBet(something);
+        m_money -= something;
+    }
+}
+
+/*
+ * Adds money from the table.
+ * Params: int money - amount of money to add.
+ * Returns: Void
+*/
+void Player::addMoney(int money)
+{
+    m_money += money;
+}
+
+
+
+
+
 
 /*
  * Constructor, depends on the Player() constructor in initialize the hand.
@@ -245,15 +360,27 @@ const Card& Dealer::getUpCard()
 */
 HandResults Dealer::play(Deck &deck)
 {
-    std::cout << "Dealer total: " << m_hands.back().getTotal() << "\n";
+    std::cout << "Dealer hand: " << m_hands.back() <<
+        " total: " << m_hands.back().getTotal() << "\n";
     while(m_hands.back().getTotal() < 17)
     {
         m_hands.back().addCard(deck.dealCard());
         int total = m_hands.back().getTotal();
-        std::cout << "Dealer total: " << total << "\n";
+        std::cout << "Dealer hand: " << m_hands.back() <<
+            " total: " << m_hands.back().getTotal() << "\n";
         if (total > 21)
             return HandResults::Break;
     }
 
     return HandResults::Unknown;
+}
+
+/*
+ * Does a dealer cut. just passes the call through to the hand.
+ * Params: Deck &deck - the deck playing with.
+ * Returns: void
+*/
+void Dealer::doCut(Deck &deck)
+{
+    deck.dealerCut();
 }

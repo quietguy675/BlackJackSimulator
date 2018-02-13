@@ -114,6 +114,7 @@ void Deck::playerCut(int cut)
 {
     assert(cut < m_num_decks*CARDS_PER_DECK);
     m_card_index = cut;
+    m_cards_drawn = 0;
     std::cout << "Player cut, card index now at: " << m_card_index << "\n";
 }
 

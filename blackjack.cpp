@@ -31,22 +31,33 @@ bool userInputPlayAgain()
  * Parms: deck reference - the deck to play with
  * Returns: HandResults - enum of win/lose/break/push/unknown
 */
-HandResults playBlackjack(Deck &deck)
+HandResults playBlackjack(Deck &deck, std::vector<Player> &players)
 {
     Dealer dealer;
-    std::vector<Player> players;
-    players.push_back(Player());
 
 
-    // Do cuts
+    // Do cuts, first player always cuts.
     players.back().doCut(deck);
-    deck.dealerCut();
+    dealer.doCut(deck);
     
     // Burn first card in the deck
     deck.dealCard();
 
     do
     {    
+        // Place bets
+        bool no_one_playing = true;
+        for (auto &player: players)
+        {
+            player.placeBets(MIN_BET);
+            if (player.isPlaying())
+                no_one_playing = false;
+        }
+        if (no_one_playing)
+        {
+            std::cout << "No one playing. Quitting shoe.";
+            break;
+        }
 
         // Deal
         for (auto &player: players)
@@ -62,21 +73,48 @@ HandResults playBlackjack(Deck &deck)
         std::cout << "\n";
         
         // Dealer peaks
-        if (dealer.getUpCard().getCardValue() == 11 && dealer.getTotal() == 21)
+        if (dealer.getUpCard().getCardValue() == 11 && 
+            dealer.getTotal() == 21)
         {
-            std::cout << "Dealer peaks.. it's blackjack!";
-            std::cout << "Your Hand: ";
+            std::cout << "Dealer peaks.. it's blackjack!\n";
+            for (auto &player: players)
+            {
+                for (auto &hand: player.getHands())
+                {
+                std::cout << "Your Hand: " << hand;
+                    if (hand.hasBlackjack())
+                    {
+                        std::cout << "Push from a blackjack!";
+                        player.addMoney(hand.getBet());
+                    }
+                std::cout << "\n";
+                }
+            }
+            for (auto &player: players)
+                player.clearHands();
+            dealer.clearHands();
             players.back().printHand();
-            if (players.back().getTotal() == 21)
-                return HandResults::Push;
-            return HandResults::Lose;
+            continue;
         } else
         if (dealer.getUpCard().getCardValue() == 11 && dealer.getTotal() != 21)
-            std::cout << "Dealer peaks.. no blackjack!";
+            std::cout << "Dealer peaks.. no blackjack!\n";
     
         bool all_busted = true;
         for (auto &player: players)
         {
+            for (auto &player: players)
+            {
+                for (auto &hand: player.getHands())
+                {
+                    if (hand.hasBlackjack())
+                    {
+                        std::cout << "Oh hot damn, blackjack off the bat!\n";
+                        hand.payOut();
+                        player.addMoney(hand.getBet()*2.5);
+                    }
+                }
+                
+            }
             player.play(deck);
             if (player.getResult() != HandResults::Break)
                 all_busted = false;
@@ -84,22 +122,68 @@ HandResults playBlackjack(Deck &deck)
     
         // Dealer does not play more cards if everyone busts.
         if (all_busted)
-            return HandResults::Lose;
-        HandResults dealer_result;
-        dealer_result = dealer.play(deck);
-    
-        if (players.back().getResult() == HandResults::Break)
-            return HandResults::Lose;
-        if (dealer_result == HandResults::Break)
-            return HandResults::Win;
-    
-        if (players.back().getTotal() == dealer.getTotal())
-            return HandResults::Push;
-        else if (players.back().getTotal() > dealer.getTotal())
-            return HandResults::Win;
+        {
+            std::cout << "\nEveryone busted. Dealer had: ";
+            dealer.printHand();
+            std::cout << "\n";
+            for (auto &player: players)
+                player.clearHands();
+            dealer.clearHands();
+            continue;
+        }
 
-        // Clean up the hands.
-        return HandResults::Lose;
+        dealer.play(deck);
+        Hand dealer_hand = dealer.getHands()[0];
+        
+        int player_counter = 1;
+        for (auto &player: players)
+        {
+            int hand_counter = 1;
+            for(auto &hand: player.getHands()) 
+            {
+                std::cout << "Player " << player_counter <<
+                    " Hand " << hand_counter;
+                ++hand_counter;
+                // Player getting blackjack off the bat already handled.
+                if (hand.payedOut())
+                {
+                    std::cout << " won from previous blackjack!\n";
+                    continue;
+                }
+                if (dealer_hand.isBusted())
+                {
+                    if (!hand.isBusted())
+                    {
+                        std::cout << " won from dealer bust!\n";
+                        player.addMoney(hand.getBet() * 2);
+                    } else
+                    {
+                        std::cout << " dealer busted, but hand was already busted\n";
+                    }
+                    continue;
+                }
+                if (hand.isBusted())
+                {
+                    std::cout << " busted :(\n";
+                    continue;
+                }
+
+                if (hand.didHandWin(dealer_hand))
+                {
+                    std::cout << " won!\n";
+                    player.addMoney(hand.getBet() * 2);
+                }
+                else if (hand.getTotal() == dealer_hand.getTotal())
+                {
+                    std::cout << " push!\n";
+                    player.addMoney(hand.getBet());
+                }
+                else
+                    std::cout << " lost :<\n";
+            }
+            ++player_counter;
+        }
+        std::cout << "****New Round!****\n";
         for (auto &player: players)
             player.clearHands();
         dealer.clearHands();
@@ -126,20 +210,15 @@ int main()
     deck.shuffleDeck();
     deck.printDeck();
 
+    std::vector<Player> players;
+    players.push_back(Player());
     do
     {
         //Actual shuffle
         deck.shuffleDeck();
         deck.printDeck();
         
-        HandResults result = playBlackjack(deck); 
-        if (result==HandResults::Win)
-            std::cout << "Congrats, You won!\n";
-        else if (result == HandResults::Push)
-            std::cout << "Push :\\n";
-        else
-            std::cout << "You lost.\n";
-        
+        playBlackjack(deck, players); 
     } while (userInputPlayAgain());
 
     return 0;
